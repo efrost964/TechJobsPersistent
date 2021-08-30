@@ -32,15 +32,56 @@ namespace TechJobsPersistent.Controllers
         [HttpGet("/Add")]
         public IActionResult AddJob()
         {
-            return View();
+            List<Employer> employers = context.Employers.ToList();
+            List<Skill> skills = context.Skills.ToList();
+            AddJobViewModel addJobViewModel = new AddJobViewModel(employers, skills);
+            return View(addJobViewModel);
         }
-
-        public IActionResult ProcessAddJobForm()
+        
+        public IActionResult ProcessAddJobForm(AddJobViewModel addJobViewModel, string[] selectedSkills)
         {
-            return View();
-        }
+            if(ModelState.IsValid)
+            {
+                Employer theEmployer = context.Employers.Find(addJobViewModel.EmployerId);
+                Job job = new Job
+                {
+                    EmployerId = addJobViewModel.EmployerId,
+                    Name = addJobViewModel.Name,
+                    Employer = theEmployer
+                    
+                
+                };
+                foreach (string skill in selectedSkills)
+                {
+                    JobSkill newJobSkill = new JobSkill
+                    {
+                        Job = job,
+                        JobId = job.Id,
+                        SkillId = Int32.Parse(skill)
+                    };
+                    context.JobSkills.Add(newJobSkill);
+                }
+                context.Jobs.Add(job);
+                context.SaveChanges();
+                return Redirect("Index");
 
-        public IActionResult Detail(int id)
+            }
+            List<Skill> skills = context.Skills.ToList();
+
+
+            addJobViewModel.Skills = skills;
+
+
+            List<Employer> employers = context.Employers.ToList();
+
+
+            addJobViewModel.createSelectListItems(employers);
+
+
+            return View("~/Views/Home/AddJob.cshtml", addJobViewModel);
+        }
+        
+       public IActionResult Detail(int id)
         {
             Job theJob = context.Jobs
                 .Include(j => j.Employer)
